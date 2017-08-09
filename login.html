@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>three.js canvas - particles - waves</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <style>
+    body {
+        background: -webkit-radial-gradient(#144586, #13194B); /* Safari 5.1 - 6.0 */
+        background: -o-radial-gradient(#144586, #13194B); /* Opera 11.6 - 12.0 */
+        background: -moz-radial-gradient(#144586, #13194B); /* Firefox 3.6 - 15 */
+        background: radial-gradient(#144586, #13194B); /* 标准的语法 */
+        background:url('https://file.iviewui.com/dist/ddb81d457e66ab31d3a2e7726a5b793a.png');
+        background-size: cover;
+        text-align: center;
+        margin: 0px;
+        overflow: hidden;
+    }
+    
+    a {
+        color: #0078ff;
+    }
+    .box{position:absolute;margin:auto;width: 470px;height: 270px;top:100px;left: 0;right: 0;box-shadow: 1px 1px 13px 2px rgba(255,255,255,.5);border-radius: 10px}
+    .box h3{color: #fff;line-height: 50px;border-bottom: 1px solid #fff;margin-bottom: 20px}
+    .box input{width: 90%;display:block;margin:0 auto 15px;height: 40px;border:1px solid rgba(255,255,255,.3);background:#fff;box-shadow: 1px 1px 10px 2px rgba(255,255,255,.3);border-radius: 5px;padding: 0 10px}
+     .box .login{width: 120px;margin: 10px auto;background: #43CC99;color: #fff;cursor: pointer;height: 40px;line-height: 40px;text-align: center;border-radius: 10px;transition: all .3s }
+    .box .login:hover{background:#008E82}
+    </style>
+</head>
+
+<body>
+<div class="box" ms-controller="login">
+    <h3>管理后台系统</h3>
+     <input type="text" name="username" :duplex-text="@username" placeholder="用户名" >
+     <input type="password" :duplex-text="@password" name="password" placeholder="密码"/>
+     <p class="login" ms-click="login">登录</p>
+</div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="http://cdn.bootcss.com/blueimp-md5/1.1.0/js/md5.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/avalon.js"></script>
+
+    <script>
+    var vm=avalon.define({
+        $id: 'login',
+        username: '',
+        password:'',
+        login:function () {
+            var param={
+                grant_type:'password',
+                password:md5(vm.password)+md5('{'+vm.username+'}'),
+                username:vm.username
+            }
+            $.ajax({
+                type: 'post',
+                url: 'http://192.168.1.115:8080/PensionPlatformAPI/oauth/token ',
+                beforeSend: function(request) {
+                    request.setRequestHeader("Authorization", token);
+                },
+                contentType:'application/x-www-form-urlencoded',
+                dataType : "json",
+                //headers: { Authorization: ' Basic YnJvc3dlcjpzZWN1cml0eQ==', 'Content-Type': 'application/x-www-form-urlencoded' },
+
+                // async:false,
+                data: param,
+                //timeout: 20000,
+                error: function (data) {
+                    alert("请求失败");
+                },
+                success: function (data) {
+                             localStorage.setItem('Toke',data.access_token)
+                }
+            });
+        }
+    })
+
+</script>
+
+
+    <script src="js/three.min.js"></script>
+
+    <script>
+    var SEPARATION = 100,
+        AMOUNTX = 100,
+        AMOUNTY = 70;
+
+    var container;
+    var camera, scene, renderer;
+
+    var particles, particle, count = 0;
+
+    var mouseX = 85,
+        mouseY = -342;
+
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+
+    init();
+    animate();
+
+    function init() {
+
+        container = document.createElement('div');
+        document.body.appendChild(container);
+container.style.marginTop='100px'
+        camera = new THREE.PerspectiveCamera(120, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = 1000;
+
+        scene = new THREE.Scene();
+
+        particles = new Array();
+
+        var PI2 = Math.PI * 2;
+        var material = new THREE.ParticleCanvasMaterial({
+
+            color: 0x63B8FF,
+            program: function(context) {
+
+                context.beginPath();
+                context.arc(0, 0, .7, 0, PI2, true);
+                context.fill();
+
+            }
+
+        });
+
+        var i = 0;
+
+        for (var ix = 0; ix < AMOUNTX; ix++) {
+
+            for (var iy = 0; iy < AMOUNTY; iy++) {
+
+                particle = particles[i++] = new THREE.Particle(material);
+                particle.position.x = ix * SEPARATION - ((AMOUNTX * SEPARATION) / 2);
+                particle.position.z = iy * SEPARATION - ((AMOUNTY * SEPARATION) / 2);
+                scene.add(particle);
+
+            }
+
+        }
+
+        renderer = new THREE.CanvasRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+         document.addEventListener('touchstart', onDocumentTouchStart, false);
+         document.addEventListener('touchmove', onDocumentTouchMove, false);
+
+        // //
+
+         window.addEventListener('resize', onWindowResize, false);
+
+    }
+
+    function onWindowResize() {
+
+        windowHalfX = window.innerWidth / 2;
+        windowHalfY = window.innerHeight / 2;
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    //
+
+    function onDocumentMouseMove(event) {
+
+        mouseX = event.clientX - windowHalfX;
+        //mouseY = event.clientY - windowHalfY;
+
+    }
+
+    function onDocumentTouchStart(event) {
+
+        if (event.touches.length === 1) {
+
+            event.preventDefault();
+
+            mouseX = event.touches[0].pageX - windowHalfX;
+          //  mouseY = event.touches[0].pageY - windowHalfY;
+
+        }
+
+    }
+
+    function onDocumentTouchMove(event) {
+
+        if (event.touches.length === 1) {
+
+            event.preventDefault();
+
+            mouseX = event.touches[0].pageX - windowHalfX;
+           // mouseY = event.touches[0].pageY - windowHalfY;
+
+        }
+
+    }
+
+    //
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+
+        render();
+
+
+    }
+
+    function render() {
+
+        camera.position.x += (mouseX - camera.position.x) * .05;
+        camera.position.y += (-mouseY - camera.position.y) * .05;
+        camera.lookAt(scene.position);
+
+        var i = 0;
+
+        for (var ix = 0; ix < AMOUNTX; ix++) {
+
+            for (var iy = 0; iy < AMOUNTY; iy++) {
+
+                particle = particles[i++];
+                particle.position.y = (Math.sin((ix + count) * 0.5) * 60) + (Math.sin((iy + count) * 0.5) * 50);
+                particle.scale.x = particle.scale.y = (Math.sin((ix + count) * 0.5) + 2) * 5 + (Math.sin((iy + count) * 0.5) + 1) * 2;
+
+            }
+
+        }
+
+        renderer.render(scene, camera);
+
+        count += 0.2;
+
+    }
+    </script>
+</body>
+
+</html>
